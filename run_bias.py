@@ -34,18 +34,17 @@ sigma = 1e-4
 
 if nn_trained == 'no':
     timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    dir_path, reg_path,train_path, scaler_path = NN_training.main(sim_name, timestamp, exp, dataset)
+    dir_path, reg_path,train_path, scaler_path = NN_training.main(sim_name, timestamp, dataset)
     print('reg_path', reg_path, train_path, scaler_path)
     print('train_path', train_path)
     print('scaler_path', scaler_path)
 elif nn_trained == 'yes':
-    dir_path = Path("C:/Users/basit/Codes/BayesMC_04112024/BayesMC/Results/Cubic_degtest")
+    dir_path = Path("/bias/Results/Cubic_degtest")
     reg_path = dir_path/('20250510-211703_cubic_1_sun_sigma=1e-4_trained_model.h5')
     train_path = dir_path/('20250510-211703_cubic_1_sun_sigma=1e-4_train_test.h5')
     scaler_path = dir_path/('20250510-211703_scaler.joblib')
 
     
-#if start_condition == 'random':                
-    bias.main(dir_path, sim_name, reg_path, train_path, scaler_path, exp_path, sigma, nwalkers)
+bias.main(dir_path, sim_name, reg_path, train_path, scaler_path, exp_path, sigma, nwalkers)
 
 
