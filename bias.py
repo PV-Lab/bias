@@ -31,7 +31,6 @@ import datetime
 import corner
 from NN_training import log_mse
 import time
-import analysis
 import mpmath as mp
 import pandas as pd
 import csv
