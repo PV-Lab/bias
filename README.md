@@ -38,7 +38,8 @@ dependencies:
   - scikit-learn~=1.3.2
   - statsmodels~=0.14.4
   - mpmath~=1.3.0
-Open a  miniforge promt (search it in the task bar) and then in that prompt window navigate to the directory where foo.yml file is located. And then run this command:
+Open a  miniforge promt (search it in your task bar) and then in that prompt window navigate to the directory where foo.yml file is located. \n
+And then run this command:
 'mamba env create -f foo.yml' to create the environment
 
 
