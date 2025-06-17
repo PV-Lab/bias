@@ -20,7 +20,26 @@ If **bias** is the main directory where you want to put everything, then **bias*
 10. run_bias.py
 
 # Code environment
-To run the code one need to create a python environment using the **env_emcee.yml** file.
+To run the code one need to create a python environment with the following libraries:
+install miniforge from Releases · conda-forge/miniforge
+Create a file called foo.yml and paste the following in it 
+name: biasenv
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pymoo~=0.6.0.1
+  - tensorflow~=2.10.0
+  - addict
+  - emcee~=3.1.6
+  - python~=3.10
+  - corner~=2.2.2
+  - joblib~=1.3.2
+  - scikit-learn~=1.3.2
+  - statsmodels~=0.14.4
+  - mpmath~=1.3.0
+Open a  miniforge promt (search it in the task bar) and then in that prompt window navigate to the directory where foo.yml file is located. And then run this command:
+'mamba env create -f foo.yml' to create the environment
 
 
 # How to run and save results
