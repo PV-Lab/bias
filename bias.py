@@ -59,7 +59,7 @@ def new_range(flat_chain):
     return numpy.array([lb_range, ub_range])
 
 
-def run_walkers_2(auto_state,sampler,data,cur_path):
+def run_walkers(auto_state,sampler,data,cur_path):
     '''
     run_walkers: final mcmc run
     '''
@@ -122,7 +122,7 @@ def run_walkers_2(auto_state,sampler,data,cur_path):
                 prob = prob[:,burn:]
             #plot_check(state, sampler)          # to plot jv curves from the current position of all walkeres overlayed on top of the jv exp
         
-        if step == 300:
+        if step == 5000:
             finished = True
         step = step + 1
 
@@ -227,7 +227,7 @@ def plot_start(auto_state, y_exp_norm, reg, batchsize, scaler, lb, ub,cur_path, 
         plt.close('all')
     
     
-def auto_high_probability(sampler, start, iterations=100):
+def auto_high_probability(sampler, start, min_prob, iterations=100):
     '''
     auto_high_probability : relocates all the walkers to high probability region
 
@@ -248,10 +248,7 @@ def auto_high_probability(sampler, start, iterations=100):
     auto_probability = None
     
     state = emcee.state.State(start)
-    
-    log_prob = None
-    rstart = None
-    
+      
     finished = None
     prev_prob = -1e308
 
@@ -262,11 +259,11 @@ def auto_high_probability(sampler, start, iterations=100):
         auto_chain = addChain(auto_chain, chain)
         auto_probability = addChain(auto_probability, probability)
 
-        best_chain, best_prob = select_best_kmeans(auto_chain, auto_probability)
+        # performs kmeans clustering on the chain and selects the best points, 
+        # and returns the best chain and probability as well as the minimum probability if it updated
+        best_chain, best_prob, min_prob_updated = select_best_kmeans(auto_chain, auto_probability, min_prob)
 
-        #print(f"best_chain {best_chain}")
-        #print(f"best_prob {best_prob}")
-        
+      
         state.coords = best_chain
         state.log_prob = best_prob
         state.random_state = None
@@ -274,14 +271,13 @@ def auto_high_probability(sampler, start, iterations=100):
         best_prob = numpy.max(best_prob)
         
         change = numpy.abs(best_prob - prev_prob)/numpy.abs(prev_prob)
-        min_prob = 1
-        if change < 0.001 and  best_prob > min_prob:
+        if change < 0.001 and  best_prob > min_prob_updated:
             finished=True
         else:
             print(f"Auto high probability has not converged yet, change {change} > 0.001")
             prev_prob = best_prob
         
-    return state, auto_chain, auto_probability
+    return state, auto_chain, auto_probability, min_prob_updated
 
 def auto_high_probability_iterations(sampler, iterations, state):
 
@@ -315,7 +311,7 @@ def auto_high_probability_iterations(sampler, iterations, state):
     sampler.reset()
     return auto_chain, auto_probability
 
-def select_best_kmeans(chain, probability):
+def select_best_kmeans(chain, probability, min_prob):
     chain_shape = chain.shape
     flat_chain = chain.reshape(chain_shape[0] * chain_shape[1], chain_shape[2])
     flat_probability = numpy.squeeze(probability.reshape(-1, 1))
@@ -326,26 +322,19 @@ def select_best_kmeans(chain, probability):
     )
     flat_probability_unique = flat_probability[unique_indexes]
 
-    '''
-    Before 06.16.2025
-    # remove low probability
-    flat_prob = numpy.exp(flat_probability_unique)
-    max_prob = numpy.max(flat_prob)
-    min_prob = max_prob / 5  # 10% of max prob cutoff
-    '''
     # remove low probability
     flat_prob = (flat_probability_unique)
     max_prob = numpy.max(flat_prob)
+    
+    min_prob_updated = min_prob
+    if max_prob <= min_prob:
+        min_prob_updated = min_prob
+    elif max_prob > min_prob and min_prob < max_prob * 0.9:
+        min_prob_updated = max_prob * 0.9
 
-    #error = numpy.full_like(512, fill_value=1, dtype=float) * 0.1
-    #sigma = 1e-4
-    #min_ln_pdf = -0.5*numpy.sum((((error)**2/(sigma**2)) + numpy.log(2*3.14*(sigma**2))), axis = 1)
-    min_prob = 1
 
-    #changed on 06.16.2025
-    #selected = (flat_prob >= min_prob) & (flat_prob <= max_prob)
 
-    selected = (flat_prob >= min_prob) #& (flat_prob <= max_prob)
+    selected = (flat_prob >= min_prob_updated) #& (flat_prob <= max_prob)
 
     flat_chain = flat_chain_unique[selected]
     flat_probability = flat_probability_unique[selected]
@@ -374,7 +363,7 @@ def select_best_kmeans(chain, probability):
         best_chain = flat_chain_unique[best, :]
         best_prob = flat_probability_unique[best]
 
-    return best_chain, best_prob
+    return best_chain, best_prob, min_prob_updated
 
 
 def addChain(*args):
@@ -668,15 +657,15 @@ def log_norm_pdf_vec(y,mu,sigma):
     n = len(y)
     #print("y shape", y.shape)
     #print("mu shape", mu.shape)
-    error_jsc = y[:,:40] - mu[:40]
-    error_voc = y[:, 384:439] - mu[384:439]
-    error_mp = y[:,169:340] - mu[169:340]
-    error_end = y[:, 500:] - mu[500:]
-    error_tot = numpy.concatenate((error_jsc, error_mp, error_voc, error_end), axis=1)
+    #error_jsc = y[:,:40] - mu[:40]
+    #error_voc = y[:, 384:439] - mu[384:439]
+    #error_mp = y[:,169:340] - mu[169:340]
+    #error_end = y[:, 500:] - mu[500:]
+    #error_tot = numpy.concatenate((error_jsc, error_mp, error_voc, error_end), axis=1)
     #print("error shape", error_tot.shape)
     #error = -0.5 * n * numpy.log(2 * numpy.pi * sigma**2) - numpy.sum((y - mu)**2) / (2 * sigma**2)
-    #error = -0.5*numpy.sum((((y-mu)**2/(sigma**2)) + numpy.log(2*3.14*(sigma**2))), axis = 1)
-    error = -0.5*numpy.sum((((error_tot)**2/(sigma**2)) + numpy.log(2*3.14*(sigma**2))), axis = 1)
+    error = -0.5*numpy.sum((((y-mu)**2/(sigma**2)) + numpy.log(2*3.14*(sigma**2))), axis = 1)
+    #error = -0.5*numpy.sum((((error_tot)**2/(sigma**2)) + numpy.log(2*3.14*(sigma**2))), axis = 1)
     return error
 
 
@@ -699,14 +688,14 @@ def error_func(theta,y_exp_norm, reg, batchsize, scaler, lb, ub):
     jv_predicted_from_theta = reg.predict(theta_norm, batch_size=batchsize)
     #print("jv_predicted_from_theta shape", jv_predicted_from_theta.shape)
     #print("y_exp_norm shape", y_exp_norm.shape)
-    error_jsc = jv_predicted_from_theta[:,:40] - y_exp_norm[:40]
-    error_voc = jv_predicted_from_theta[:, 384:439] - y_exp_norm[ 384:439]
-    error_mp = jv_predicted_from_theta[:,169:340] - y_exp_norm[169:340]
-    error_end = jv_predicted_from_theta[:, 500:] - y_exp_norm[500:]
-    error_tot = numpy.abs(numpy.concatenate((error_jsc, error_mp, error_voc, error_end), axis=1))
-    error_elimentwise = error_tot
-    error_total = numpy.sum(error_elimentwise, axis=1)
-    #error_total = numpy.sum(jv_predicted_from_theta - y_exp_norm, axis=1)
+    #error_jsc = jv_predicted_from_theta[:,:40] - y_exp_norm[:40]
+    #error_voc = jv_predicted_from_theta[:, 384:439] - y_exp_norm[ 384:439]
+    #error_mp = jv_predicted_from_theta[:,169:340] - y_exp_norm[169:340]
+    #error_end = jv_predicted_from_theta[:, 500:] - y_exp_norm[500:]
+    #error_tot = numpy.abs(numpy.concatenate((error_jsc, error_mp, error_voc, error_end), axis=1))
+    #error_elimentwise = error_tot
+    #error_total = numpy.sum(error_elimentwise, axis=1)
+    error_total = numpy.sum(jv_predicted_from_theta - y_exp_norm, axis=1)
     #print(error_total)
     return error_total
 
@@ -839,8 +828,6 @@ def plot_jv(y_exp, y_exp_bayes, x_exp, filename,eff_p, eff_e, Voc_p, Voc_e, Jsc_
     plt.tick_params(axis='both', which='major', labelsize=20)
     plt.plot(x_exp, y_exp, color = 'green',alpha=0.45,label='experimental data')
     plt.plot(x_exp, y_exp_bayes, color = 'blue',linestyle='--',alpha=0.45,label='modelled data')
-    #plt.plot(x_exp, Power_p, color = 'red', linestyle='--', alpha=0.45, label='Power (modelled)')
-    #plt.plot(x_exp, Power_e, color = 'orange', linestyle='--', alpha=0.45, label='Power (experimental)')
     plt.scatter(V_mpp_p, J_mpp_p, color='blue', s=100, zorder=5, label='MPP (modelled)')
     plt.scatter(V_mpp_e, J_mpp_e, color='green', s=100, zorder=5, label='MPP (experimental)')
     # Add a small table with Voc, Jsc, FF, and Pmax values for both modelled and experimental data
@@ -866,19 +853,12 @@ def plot_jv(y_exp, y_exp_bayes, x_exp, filename,eff_p, eff_e, Voc_p, Voc_e, Jsc_
     rows = ['Voc (V)', 'Jsc (mA/cm²)', 'FF', 'Pmax (mW/cm²)', 'Efficiency (%)']
     cols = ['Modelled', 'Experimental']
     # Position the table at centre left
-    table = plt.table(cellText=cell_text, rowLabels=rows, colLabels=cols, loc='center left', cellLoc='center', colLoc='center', bbox=[0.05, 0.35, 0.33, 0.35])
+    table = plt.table(cellText=cell_text, rowLabels=rows, colLabels=cols, loc='center left', cellLoc='center', colLoc='center', bbox=[0.30, 0.30, 0.33, 0.35])
     table.auto_set_font_size(False)
     table.set_fontsize(12)
-    #plt.text(0.1, -8, '1.0 sun', fontsize=15, color='black')
-    #plt.text(0.1, -10, 'Voc = %.2f V' % Voc, fontsize=15, color='black')
-    #plt.text(0.1, -12, 'Jsc = %.2f mA/cm2' % Jsc, fontsize=15, color='black')
-    #plt.text(0.1, -14, 'Pmax = %.2f mW/cm2' % Pmax, fontsize=15, color='black')
-    #plt.text(0.1, -16, 'FF = %.2f' % FF, fontsize=15, color='black')
-    #plt.text(0.1, -18, 'eff = %.2f %%' % (eff*100), fontsize=15, color='black')
     plt.legend()
     plt.legend(fontsize=15)
     plt.ylim(-28,0)
-    #plt.xlim(0, 1.1)
     plt.xlabel('voltage $V$ (V)', fontsize=20)
     plt.ylabel('current density $J \ \mathrm{(mA/cm^2)}$', fontsize=20)
     plt.title('Illumination depednent $JV$ Data', fontsize=20)
@@ -986,28 +966,32 @@ def best_params_post_processing(mother_chain, mother_prob, reg, batchsize, scale
     best_parameters_actual = parameter_post_processing(best_params_ln, cur_path)
     jv_predicted= jv_predicted.reshape(-1,1)
     y_exp_bayes = jv_predicted*(y_max-y_min) + y_min
-    eff_p, Voc_p, Jsc_p, V_mpp_p, J_mpp_p, Power_p, Pmax_p, FF_p = efficiency_func(x_exp, y_exp_bayes)
-    eff_e, Voc_e, Jsc_e, V_mpp_e, J_mpp_e, Power_e, Pmax_e, FF_e = efficiency_func(x_exp, y_exp)
-    plot_jv(y_exp, y_exp_bayes, x_exp, filename,eff_p, eff_e, Voc_p, Voc_e, Jsc_p, Jsc_e, V_mpp_p, V_mpp_e,
+    y_exp_1sun = y_exp[128*3:]
+    y_exp_bayes_1sun = y_exp_bayes[128*3:]
+    eff_p, Voc_p, Jsc_p, V_mpp_p, J_mpp_p, Power_p, Pmax_p, FF_p = efficiency_func(x_exp, y_exp_bayes_1sun)
+    eff_e, Voc_e, Jsc_e, V_mpp_e, J_mpp_e, Power_e, Pmax_e, FF_e = efficiency_func(x_exp, y_exp_1sun)
+    plot_jv(y_exp_1sun, y_exp_bayes_1sun, x_exp, filename,eff_p, eff_e, Voc_p, Voc_e, Jsc_p, Jsc_e, V_mpp_p, V_mpp_e,
              J_mpp_p, J_mpp_e, Power_p, Power_e, Pmax_p, Pmax_e, FF_p, FF_e, cur_path)
-    write_csv(cur_path, x_exp, y_exp, y_exp_bayes,eff_p, eff_e, Voc_p, Voc_e, Jsc_p, Jsc_e,V_mpp_p, V_mpp_e,
+    write_csv(cur_path, x_exp, y_exp_1sun, y_exp_bayes_1sun,eff_p, eff_e, Voc_p, Voc_e, Jsc_p, Jsc_e,V_mpp_p, V_mpp_e,
                J_mpp_p, J_mpp_e, Power_p, Power_e, Pmax_p, Pmax_e, FF_p, FF_e)
     return eff_p, eff_p, Voc_p, Voc_e, Jsc_p, Jsc_e, V_mpp_p, V_mpp_e, J_mpp_p, J_mpp_e, Power_p, Power_e, Pmax_p, Pmax_e, FF_p,FF_e, best_prob_mc, max_index, best_params, jv_predicted, best_params_ln, best_parameters_actual, y_exp_bayes
 
 
 
-def main(dir_path, name, reg_path, train_path, scaler_path,exp_path, sigma, nwalkers):
+def main(results_path, name, reg_path, train_path, scaler_path,exp_path, sigma, min_prob, nwalkers):
     batchsize = 8192
+
+    # create a subdirectory for results
     start_time = time.time()
     identity = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     sub_dir = identity + name 
     print(sub_dir)
-    sub_path = dir_path/("%s" % sub_dir)
+    sub_path = results_path/("%s" % sub_dir)
     os.mkdir(sub_path)
     
     results = h5.H5()
     results_name = sub_path/("%s.h5" % sub_dir)
-    results.filename = results_name.as_posix() #the file where all your training related data is getting stored
+    results.filename = results_name.as_posix() #the file where all your data is getting stored
     results.save()
     print(results.filename)
     
@@ -1016,6 +1000,17 @@ def main(dir_path, name, reg_path, train_path, scaler_path,exp_path, sigma, nwal
 
     # load upper bound, lower bound and min max of different experiments
     ub, lb, n_var, y_max, y_min = load_training_data(train_path)
+    
+    # save the variables needed to reproduce the results
+    results.root.ub = ub
+    results.root.lb = lb    
+    results.root.n_var = n_var
+    results.root.y_max = y_max
+    results.root.y_min = y_min
+    results.root.sigma = sigma
+    results.root.min_prob = min_prob
+    results.save()
+
 
     ndim = len(ub)
     # load scaler
@@ -1053,24 +1048,21 @@ def main(dir_path, name, reg_path, train_path, scaler_path,exp_path, sigma, nwal
     results.root.prob_initial = prob
     results.save()
 
-    error = numpy.full(512, fill_value=1, dtype=float) * 0.00041
-    sigma = 1e-4
-    min_ln_pdf = -0.5*numpy.sum((((error)**2/(sigma**2)) + numpy.log(2*3.14*(sigma**2))))
-    min_prob = min_ln_pdf
-    print("min_prob", min_prob)
-
-    auto_state, auto_chain, auto_probability = auto_high_probability(sampler, start)
+    auto_state, auto_chain, auto_probability, min_prob_updated = auto_high_probability(sampler, start, min_prob)
     results.root.walkers_start = auto_state.coords
     results.root.walker_start_prob = auto_state.log_prob
     results.root.optimized.walkers_start_chain = auto_chain
     results.root.optimized.walkers_start_prob = auto_probability
+    results.root.optimized.min_pro_original = min_prob
+    results.root.optimized.min_prob_updated = min_prob_updated
     results.save()
 
-    plot_start(auto_state, y_exp_norm, reg, batchsize, scaler,lb, ub, sub_path, results)
+
+    #plot_start(auto_state, y_exp_norm, reg, batchsize, scaler,lb, ub, sub_path, results)
 
     
     # run final bayes step
-    motherchainT, motherprobT = run_walkers_2(auto_state,sampler, results, sub_path)
+    motherchainT, motherprobT = run_walkers(auto_state,sampler, results, sub_path)
 
     end_time = time.time()
     total_time = end_time - start_time
@@ -1082,6 +1074,7 @@ def main(dir_path, name, reg_path, train_path, scaler_path,exp_path, sigma, nwal
     lb_ln = numpy.log(lb)
     
     plot_corner(sub_path, motherchainT, ub_ln,lb_ln)
+    
     
     eff_p, eff_p, Voc_p, Voc_e, Jsc_p, Jsc_e, V_mpp_p, V_mpp_e, J_mpp_p, J_mpp_e, Power_p, Power_e, Pmax_p, Pmax_e, FF_p,FF_e, best_prob_mc, max_index, best_params, jv_predicted, best_params_ln, best_parameters_actual, y_exp_bayes = best_params_post_processing(motherchainT, 
                                                                                 motherprobT, reg, batchsize, scaler, ub_ln, lb_ln, y_exp, y_max, y_min, x_exp, name,sub_path)
@@ -1095,6 +1088,7 @@ def main(dir_path, name, reg_path, train_path, scaler_path,exp_path, sigma, nwal
     results.root.from_MC.best_parameters_actual = best_parameters_actual
     results.root.from_MC.y_exp_bayes = y_exp_bayes
     results.save()
+    
 
     
     

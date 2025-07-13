@@ -4,22 +4,17 @@ from pathlib import Path
 import datetime
 import os
 
-#exp_dir = Path('./Cubic_Deg_data/')
-
-#h5_files = list(exp_dir.glob("*.h5"))
-#print("Found h5 files:", h5_files)
-
-#for h5_file in h5_files:
-#    exp_path = exp_dir / h5_file.name
-#    print(f"Processing file: {exp_path}")
-    
-    # The rest of the code will use the updated exp_path
-
-
+# If you want to use a trained neural network, set nn_trained to 'yes'. If you want to train a new neural network, set it to 'no'.
 
 nn_trained = 'yes' # 'yes', 'no'
-dataset = Path("./Dataset/params_8_sun_1_for_cubic_output_transformed.h5")
-exp_path = Path("./Cubic_Deg_data/Device_EFJ1-169-3_Pixel_1_Sweep_1_degtest_Age_50.0.h5")
+
+# Define the paths for the directories and dataset
+dir_path = os.getcwd()  # Current working directory
+Results_path = Path(dir_path) / "Results"  # Results directory where all results will be saved
+dataset = Path("./Dataset/0102025_JV_226580_dataset_8_parameters.h5")  # Dataset for the NN training
+exp_path = Path("./Experimental_data/0102025_exp_JV_dataset_12_1_065_025_sun.h5")      # Experimental data path
+
+
 
 # Extract the last part of the exp_path and create a file name
 h5_name = exp_path.stem 
@@ -29,22 +24,28 @@ sim_name = "_" + last_six_chars
 
 print("Generated file name:", sim_name)
 
-nwalkers = 512
-sigma = 1e-4
+nwalkers = 512      # Number of parallel samplers for the MCMC
+sigma = 1e-4    # Noise level for the experimental data
+min_prob = 700  # Minimum probability a combination of parameters must have to be accepted as a valid solution
 
+# Neural Network training
+
+# If nn_trained is 'no', it will train a new neural network and save the model, training data, and scaler.
 if nn_trained == 'no':
     timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    dir_path, reg_path,train_path, scaler_path = NN_training.main(sim_name, timestamp, dataset)
+    dir_path, reg_path,train_path, scaler_path = NN_training.main("Training", timestamp, dataset)
     print('reg_path', reg_path, train_path, scaler_path)
     print('train_path', train_path)
     print('scaler_path', scaler_path)
+
+
+# if nn_trained is 'yes', it will use the trained model and scaler to perform bias correction on the experimental data.
 elif nn_trained == 'yes':
-    dir_path = Path("C:/Users/basit/Codes/bias/Results/Cubic_degtest")
-    reg_path = dir_path/('20250510-211703_cubic_1_sun_sigma=1e-4_trained_model.h5')
-    train_path = dir_path/('20250510-211703_cubic_1_sun_sigma=1e-4_train_test.h5')
-    scaler_path = dir_path/('20250510-211703_scaler.joblib')
+    reg_path = Results_path / 'Training/JV_dataset_8_parameters_trained_model.h5'
+    train_path = Results_path / 'Training/JV_dataset_8_parameters_train_test.h5'
+    scaler_path = Results_path / 'Training/input_transform_scaler.joblib'
 
     
-bias.main(dir_path, sim_name, reg_path, train_path, scaler_path, exp_path, sigma, nwalkers)
+bias.main(Results_path, sim_name, reg_path, train_path, scaler_path, exp_path, sigma, min_prob,nwalkers)
 
 
