@@ -4,8 +4,9 @@ This code is used to perform parameter estimation from experimental JV data of s
 
 # File download 
 1. Clone the code from GitHub
-2. Download **Dataset** and **Results** directory from https://osf.io/jcqke/?view_only=6c63f45e6097491e9625688aa816b794.
-3. Put the two folders inside the directory where the rest of the code is. **Code won't run until you download this two folder and put then inside the directory**
+2. Download **Dataset** from from [Zenodo](https://zenodo.org/records/15875229?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6IjJjZjRkODM5LWMxMzktNDQzNy05NzQ1LTg2NmU0YjQ2M2RmMyIsImRhdGEiOnt9LCJyYW5kb20iOiJlNGE5NTBmMzhjODZmNTY1YzEzOGMyYmZhODNiNDhlYSJ9.gWw0G0oTJHrPNScyKjJIQEbZ_jfEdduDouB2aik_7X0fKmlox4OLMF4RtfSwqSYmUmc54bmwEt4rRvZ8-S2U2A)
+   
+4. Put the two folders inside the directory where the rest of the code is. **Code won't run until you download this two folder and put then inside the directory**
 
 Example: 
 If **bias** is the main directory where you want to put everything, then **bias** should have the following files/Folders
