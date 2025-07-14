@@ -22,7 +22,7 @@ If **bias** is the main directory where you want to put everything, then **bias*
 
 # Code environment
 To run the code one need to create a python environment with the following libraries:
-install miniforge from Releases · conda-forge/miniforge
+install miniforge from Releases · conda-forge/miniforge\
 Create a file called foo.yml and paste the following in it 
 name: biasenv
 channels:
