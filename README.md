@@ -49,8 +49,8 @@ The code runs from **run_bias.py** and saves all results from the current run in
 During every run the following files/folders are generated in a :
 If NN is not trained, nn_trained = "No"
 1. "**timestamp_NN_trained_model.h5**" stores the weights and biases trained NN model. 
-2. "**_timestamp_NN_train_test.h5**" stores the data used for training and testing the NN netwrok.
-3. "**_timestamp_NN_scaler.joblib**" stores the scaler used to perform transformation of the training data.
+2. "**timestamp_NN_train_test.h5**" stores the data used for training and testing the NN netwrok.
+3. "**timestamp_NN_scaler.joblib**" stores the scaler used to perform transformation of the training data.
 4. A new folder is created "**timestamp_training**" which saves the NN training
 
 # Steps to run the code without training the NN
