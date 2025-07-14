@@ -54,7 +54,7 @@ If NN is not trained, nn_trained = "No"
 4. A new folder is created "**timestamp_training**" which saves the NN training
 
 # Steps to run the code without training the NN
-It is possible to run the code without training the NN surrogae model. A pre-trained NN has been provided in **Results/Training**(download from zenodo)
+It is possible to run the code without training the NN surrogae model. A pre-trained NN has been provided in **Results/Training**(download from [Zenodo](https://zenodo.org/records/15875229?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6IjJjZjRkODM5LWMxMzktNDQzNy05NzQ1LTg2NmU0YjQ2M2RmMyIsImRhdGEiOnt9LCJyYW5kb20iOiJlNGE5NTBmMzhjODZmNTY1YzEzOGMyYmZhODNiNDhlYSJ9.gWw0G0oTJHrPNScyKjJIQEbZ_jfEdduDouB2aik_7X0fKmlox4OLMF4RtfSwqSYmUmc54bmwEt4rRvZ8-S2U2A))
 1. To run the code with the pre-tranied NN, download the data and trained NN files availble in Zenodo
 2. Make sure the variable **nn_trained='yes'** in file "**run_bias.py**"
 3. Then run the code from **run_bias.py**
