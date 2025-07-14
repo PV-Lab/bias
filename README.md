@@ -59,6 +59,5 @@ It is possible to run the code without training the NN surrogae model. A pre-tra
 2. Make sure the variable **nn_trained='yes'** in file "**run_bias.py**"
 3. Then run the code from **run_bias.py**
 
-# checking
 
 
